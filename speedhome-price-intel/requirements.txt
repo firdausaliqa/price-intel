@@ -1,0 +1,18 @@
+streamlit>=1.35
+pandas>=2.2,<3.0        # pinned below 3.0: pandas 3.x defaults to PyArrow-backed
+                         # string storage, which we found segfaults intermittently
+                         # (~35% of runs in testing) when combined with recent
+                         # pyarrow on groupby operations. See data/processor.py.
+numpy<2                  # paired with the pandas pin above for a tested-stable combo
+pyarrow<18                # paired with the pandas pin above for a tested-stable combo
+requests>=2.31
+beautifulsoup4>=4.12
+lxml>=5.2
+playwright>=1.44
+openpyxl>=3.1          # required by pandas to write .xlsx
+python-dateutil>=2.9
+rapidfuzz>=3.9          # fuzzy matching for the area auto-suggest search box
+curl_cffi>=0.7          # optional: impersonates real browser TLS fingerprint,
+                         # often gets past Cloudflare where plain `requests` can't.
+                         # Scraper falls back to `requests` automatically if
+                         # this package or its install fails on your platform.
