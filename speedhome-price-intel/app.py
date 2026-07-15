@@ -32,12 +32,173 @@ st.set_page_config(
     layout="wide",
 )
 
-# Minimal CSS: ensure tables scroll horizontally instead of squashing on
-# narrow/mobile viewports (Requirement 6).
+# --- Fintech-style visual theme (matched to reference image) ---
+# Palette: white background, near-black cards/buttons, neon lime-green
+# accent, warm cream secondary cards. Buttons are fully pill-shaped;
+# cards use large (20-24px) rounded corners. Every text color below is
+# set explicitly (never inherited) to avoid any dark-on-dark or
+# light-on-light contrast clashes.
 st.markdown(
     """
     <style>
-    div[data-testid="stDataFrame"] { overflow-x: auto; }
+    :root {
+        --black: #141414;
+        --neon: #D4F832;
+        --cream: #F3F1EA;
+        --cream-light: #F7F6F1;
+        --gray-text: #6B6B68;
+        --radius-card: 22px;
+        --radius-pill: 999px;
+    }
+
+    .stApp { background-color: #FFFFFF; }
+
+    /* Force every default text element to an explicit, safe color --
+       eliminates any inherited-color contrast issues regardless of cause */
+    .stApp, .stApp p, .stApp span, .stApp label,
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4,
+    .stMarkdown, .stCaption {
+        color: var(--black) !important;
+    }
+    .stApp h1, .stApp h2, .stApp h3 { font-weight: 800 !important; }
+
+    /* Sidebar: cream background, explicit dark text */
+    section[data-testid="stSidebar"] {
+        background-color: var(--cream);
+        border-right: 1px solid var(--black);
+    }
+    section[data-testid="stSidebar"] * { color: var(--black) !important; }
+
+    /* Alert boxes (st.info/warning/success): force light bg + dark text
+       explicitly rather than trusting theme-derived defaults */
+    div[data-testid="stAlert"] {
+        background-color: var(--cream-light) !important;
+        border: 1px solid var(--black) !important;
+        border-radius: var(--radius-card) !important;
+    }
+    div[data-testid="stAlert"] p { color: var(--black) !important; }
+
+    /* Tables: rounded card container */
+    div[data-testid="stDataFrame"] {
+        overflow-x: auto;
+        border: 1px solid var(--black);
+        border-radius: var(--radius-card);
+        padding: 4px;
+        background-color: #FFFFFF;
+    }
+
+    /* Inputs: crisp border, rounded, explicit dark text on white */
+    div[data-testid="stTextInput"] input,
+    div[data-baseweb="select"] > div {
+        border: 1px solid var(--black) !important;
+        border-radius: var(--radius-card) !important;
+        background-color: #FFFFFF !important;
+        color: var(--black) !important;
+        padding: 6px 8px !important;
+    }
+
+    /* Buttons: fully pill-shaped, per the reference.
+       Primary (Search) = neon fill + black text (the reference reserves
+       neon for its single top CTA, "Get App"/"Subscribe").
+       Secondary (Download) = black fill + white text ("Read FAQ" style). */
+    button[kind="primary"] {
+        background-color: var(--neon) !important;
+        color: var(--black) !important;
+        border: 1px solid var(--black) !important;
+        border-radius: var(--radius-pill) !important;
+        font-weight: 700 !important;
+        padding: 0.6rem 1.6rem !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #c2e82a !important;
+        color: var(--black) !important;
+    }
+
+    button[kind="secondary"], .stDownloadButton button {
+        background-color: var(--black) !important;
+        color: #FFFFFF !important;
+        border: 1px solid var(--black) !important;
+        border-radius: var(--radius-pill) !important;
+        font-weight: 700 !important;
+        padding: 0.6rem 1.6rem !important;
+    }
+    .stDownloadButton button:hover {
+        background-color: #000000 !important;
+        color: var(--neon) !important;
+    }
+
+    /* KPI summary cards -- two alternating variants, echoing the
+       black/cream/black rhythm of the reference's stat-card row.
+       Each variant pins ALL its own text colors, so alternating never
+       risks a mismatched pairing. */
+    .kpi-card {
+        border-radius: var(--radius-card);
+        padding: 22px 24px;
+        margin-bottom: 16px;
+        height: 100%;
+    }
+    .kpi-card--light {
+        background-color: var(--cream-light);
+        border: 1px solid var(--black);
+    }
+    .kpi-card--dark {
+        background-color: var(--black);
+        border: 1px solid var(--black);
+    }
+
+    .kpi-card--light .kpi-title {
+        background-color: var(--black);
+        color: var(--neon);
+    }
+    .kpi-card--dark .kpi-title {
+        background-color: var(--neon);
+        color: var(--black);
+    }
+    .kpi-card .kpi-title {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border-radius: var(--radius-pill);
+        padding: 4px 14px;
+        margin-bottom: 14px;
+    }
+
+    .kpi-card--light .kpi-fair-price { color: var(--black) !important; }
+    .kpi-card--dark .kpi-fair-price { color: #FFFFFF !important; }
+    .kpi-card .kpi-fair-price {
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 2px;
+    }
+
+    .kpi-card--light .kpi-fair-label { color: var(--gray-text) !important; }
+    .kpi-card--dark .kpi-fair-label { color: #B8B8B0 !important; }
+    .kpi-card .kpi-fair-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-bottom: 14px;
+    }
+
+    .kpi-card--light .kpi-stats-grid { border-top: 1px solid #ddd9cf; }
+    .kpi-card--dark .kpi-stats-grid { border-top: 1px solid #3a3a3a; }
+    .kpi-card .kpi-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 16px;
+        padding-top: 12px;
+    }
+
+    .kpi-card--light .kpi-stat-label { color: var(--gray-text) !important; }
+    .kpi-card--dark .kpi-stat-label { color: #B8B8B0 !important; }
+    .kpi-card .kpi-stat-label { font-size: 0.72rem; }
+
+    .kpi-card--light .kpi-stat-value { color: var(--black) !important; }
+    .kpi-card--dark .kpi-stat-value { color: #FFFFFF !important; }
+    .kpi-card .kpi-stat-value { font-size: 0.95rem; font-weight: 700; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -98,6 +259,52 @@ def run_live_scrape(slug: str, max_pages: int, use_impersonation: bool = False) 
         # to Python's GC, which can run on a different Streamlit rerun
         # thread and crash curl_cffi's native handle (see speedhome_scraper.close).
         scraper.close()
+
+
+def render_summary_cards(summary_df: pd.DataFrame, cols_per_row: int = 3) -> None:
+    """
+    Renders the Price Summary DataFrame as a grid of high-contrast KPI
+    cards (one per Unit Type) instead of a plain table -- Fair Price is
+    the visual focal point of each card, with the other stats (Count,
+    Average, Median, Mode, Avg Size) as a secondary stat grid underneath.
+    """
+    def _fmt_rm(value) -> str:
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            return "—"
+        return f"RM {value:,.0f}"
+
+    def _fmt_sqft(value) -> str:
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            return "—"
+        return f"{value:,.0f} sqft"
+
+    rows = summary_df.to_dict("records")
+    for i in range(0, len(rows), cols_per_row):
+        row_chunk = rows[i:i + cols_per_row]
+        cols = st.columns(cols_per_row)
+        for j, (col, stat) in enumerate(zip(cols, row_chunk)):
+            variant = "kpi-card--dark" if (i + j) % 2 == 1 else "kpi-card--light"
+            with col:
+                st.markdown(
+                    f"""
+                    <div class="kpi-card {variant}">
+                        <span class="kpi-title">{stat['Unit Type']}</span>
+                        <div class="kpi-fair-price">{_fmt_rm(stat['Fair Price (RM)'])}</div>
+                        <div class="kpi-fair-label">Fair Price · {stat['Count']} listing{'s' if stat['Count'] != 1 else ''}</div>
+                        <div class="kpi-stats-grid">
+                            <div class="kpi-stat-label">Average</div>
+                            <div class="kpi-stat-value">{_fmt_rm(stat['Average Price (RM)'])}</div>
+                            <div class="kpi-stat-label">Median</div>
+                            <div class="kpi-stat-value">{_fmt_rm(stat['Median Price (RM)'])}</div>
+                            <div class="kpi-stat-label">Mode</div>
+                            <div class="kpi-stat-value">{_fmt_rm(stat['Mode Price (RM)'])}</div>
+                            <div class="kpi-stat-label">Avg Size</div>
+                            <div class="kpi-stat-value">{_fmt_sqft(stat['Average Size (sqft)'])}</div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
 
 # ------------------------------------------------------------------ UI ----
@@ -223,7 +430,7 @@ if df is not None and not df.empty:
 
     st.subheader("Price Summary by Unit Type")
     summary_df = build_price_summary(df)
-    st.dataframe(summary_df, width='stretch', hide_index=True)
+    render_summary_cards(summary_df)
 
     st.subheader("Unit Listings")
     listing_cols = [
