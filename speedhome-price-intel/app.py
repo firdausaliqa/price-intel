@@ -55,10 +55,10 @@ st.markdown(
 
     /* Force every default text element to an explicit, safe color --
        eliminates any inherited-color contrast issues regardless of cause */
-    .stApp, .stApp p, .stApp span, .stApp label,
+    .stApp, .stApp p, .stApp span,
     .stApp h1, .stApp h2, .stApp h3, .stApp h4,
     .stMarkdown, .stCaption {
-        color: var(--black) !important;
+    color: var(--black) !important;
     }
     .stApp h1, .stApp h2, .stApp h3 { font-weight: 800 !important; }
 
