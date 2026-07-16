@@ -58,7 +58,7 @@ st.markdown(
     .stApp, .stApp p, .stApp span,
     .stApp h1, .stApp h2, .stApp h3, .stApp h4,
     .stMarkdown, .stCaption {
-    color: var(--black) !important;
+        color: var(--black) !important;
     }
     .stApp h1, .stApp h2, .stApp h3 { font-weight: 800 !important; }
 
@@ -86,8 +86,28 @@ st.markdown(
         padding: 4px;
         background-color: #FFFFFF;
     }
+    /* The interactive grid inside st.dataframe is canvas-rendered, so it
+       reads its colors from these custom properties rather than normal
+       CSS inheritance -- force them to the light palette explicitly. */
+    div[data-testid="stDataFrame"] {
+        --gdg-bg-cell: #FFFFFF;
+        --gdg-bg-cell-medium: var(--cream-light);
+        --gdg-bg-header: var(--cream);
+        --gdg-bg-header-has-focus: var(--cream);
+        --gdg-bg-bubble: var(--cream-light);
+        --gdg-text-dark: var(--black);
+        --gdg-text-light: var(--gray-text);
+        --gdg-text-header: var(--black);
+        --gdg-border-color: #E0DDD3;
+        --gdg-accent-color: var(--neon);
+        --gdg-accent-fg: var(--black);
+        --gdg-accent-light: var(--cream-light);
+    }
 
-    /* Inputs: crisp border, rounded, explicit dark text on white */
+    /* Inputs: crisp border, rounded, explicit dark text on white.
+       Placeholder text and the small "Press Enter to apply" instructions
+       Streamlit shows below an unsubmitted input both need their own
+       explicit color -- they don't inherit from the input's own color. */
     div[data-testid="stTextInput"] input,
     div[data-baseweb="select"] > div {
         border: 1px solid var(--black) !important;
@@ -96,11 +116,23 @@ st.markdown(
         color: var(--black) !important;
         padding: 6px 8px !important;
     }
+    div[data-testid="stTextInput"] input::placeholder {
+        color: #8A8A85 !important;
+        opacity: 1 !important;
+    }
+    div[data-testid="stTextInput"] div[data-testid="InputInstructions"],
+    div[data-testid="stTextInput"] small {
+        color: #8A8A85 !important;
+    }
 
     /* Buttons: fully pill-shaped, per the reference.
        Primary (Search) = neon fill + black text (the reference reserves
        neon for its single top CTA, "Get App"/"Subscribe").
-       Secondary (Download) = black fill + white text ("Read FAQ" style). */
+       Secondary (Download) = black fill + white text ("Read FAQ" style).
+       Streamlit often wraps button labels in an inner <p> or <div> --
+       the broad ".stApp p" rule above would otherwise force that inner
+       text back to black regardless of the button's own color, so we
+       explicitly make button-internal text inherit from the button. */
     button[kind="primary"] {
         background-color: var(--neon) !important;
         color: var(--black) !important;
@@ -112,6 +144,9 @@ st.markdown(
     button[kind="primary"]:hover {
         background-color: #c2e82a !important;
         color: var(--black) !important;
+    }
+    button[kind="primary"] p, button[kind="primary"] div, button[kind="primary"] span {
+        color: inherit !important;
     }
 
     button[kind="secondary"], .stDownloadButton button {
@@ -125,6 +160,10 @@ st.markdown(
     .stDownloadButton button:hover {
         background-color: #000000 !important;
         color: var(--neon) !important;
+    }
+    button[kind="secondary"] p, button[kind="secondary"] div, button[kind="secondary"] span,
+    .stDownloadButton button p, .stDownloadButton button div, .stDownloadButton button span {
+        color: inherit !important;
     }
 
     /* KPI summary cards -- two alternating variants, echoing the
@@ -148,11 +187,11 @@ st.markdown(
 
     .kpi-card--light .kpi-title {
         background-color: var(--black);
-        color: var(--neon);
+        color: var(--neon) !important;
     }
     .kpi-card--dark .kpi-title {
         background-color: var(--neon);
-        color: var(--black);
+        color: var(--black) !important;
     }
     .kpi-card .kpi-title {
         display: inline-block;
@@ -392,18 +431,22 @@ if search_clicked and area_slug:
         with st.spinner(f"Fetching live listings for {area_name}..."):
             df, err = run_live_scrape(area_slug, max_pages=max_pages, use_impersonation=use_impersonation)
         if err:
-            status_notes.append(f"Live scrape failed: {err}")
+            status_notes.append(("warning", f"Live scrape failed: {err}"))
 
     if df is None and data_mode in ("Auto (live, fall back to cached)", "Cached data only"):
         cached_df = load_cached(area_slug)
         if cached_df is not None:
             df = cached_df
-            status_notes.append("Loaded previously saved (cached) data instead of live data.")
+            status_notes.append(("info", "Loaded previously saved (cached) data instead of live data."))
         else:
-            status_notes.append(
-                f"No cached snapshot exists yet for '{area_name}' "
-                f"(expected at data/cache/{area_slug}.csv)."
-            )
+            status_notes.append((
+                "error",
+                f"No data available for **{area_name}**: live scraping "
+                f"{'failed' if data_mode != 'Cached data only' else 'was skipped (Cached data only mode)'}, "
+                f"and no cached snapshot exists yet for this area "
+                f"(expected at `data/cache/{area_slug}.csv`). Try a different "
+                f"area name, or Mont Kiara, which has a saved snapshot."
+            ))
 
     st.session_state["current_df"] = df
     st.session_state["current_area_name"] = area_name
@@ -415,8 +458,10 @@ df = st.session_state.get("current_df")
 area_name_shown = st.session_state.get("current_area_name")
 status_notes = st.session_state.get("status_notes", [])
 
-for note in status_notes:
-    if note.startswith("Live scrape failed"):
+for level, note in status_notes:
+    if level == "error":
+        st.error(note)
+    elif level == "warning":
         st.warning(note)
     else:
         st.info(note)

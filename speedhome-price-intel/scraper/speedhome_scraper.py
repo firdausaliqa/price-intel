@@ -101,6 +101,17 @@ class SpeedhomeScraper:
         if not self.respect_robots:
             return
         path = f"/rent/{area_slug}"
+        if not self._robots._loaded:
+            # We couldn't even fetch robots.txt (network error, DNS issue,
+            # etc.) -- this is NOT the same as robots.txt actively
+            # disallowing the path. We still refuse to scrape (conservative
+            # default), but the error message must say so accurately rather
+            # than implying a deliberate policy block.
+            raise RobotsDisallowedError(
+                f"Could not verify robots.txt for {BASE_URL} (network error "
+                f"or site unreachable) -- refusing to scrape as a precaution. "
+                f"This is not necessarily a real policy block."
+            )
         if not self._robots.can_fetch(path):
             raise RobotsDisallowedError(
                 f"robots.txt disallows fetching {path} -- refusing to scrape."
